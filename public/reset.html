@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <form action="reset-password" method="POST">
+      <input
+        type="password"
+        id="password"
+        name="password"
+        placeholder="New Password"
+        required
+      />
+      <input
+        type="password"
+        id="password-confirm"
+        name="password-confirm"
+        placeholder="Confirm Password"
+        required
+      />
+      <input type="password" id="token" name="token" required hidden />
+      <button>Submit</button>
+    </form>
+    <script>
+      window.onload = () => {
+        let params = new URL(document.location).searchParams;
+        let token = params.get("token");
+        document.getElementById("token").value = token;
+
+        form = document.querySelector("form");
+        form.onsubmit = (e) => {
+          e.preventDefault();
+          let password = document.getElementById("password").value;
+          let passwordConfirm =
+            document.getElementById("password-confirm").value;
+          if (password != passwordConfirm) {
+            alert("Passwords do not match");
+          } else {
+            form.submit();
+          }
+        };
+      };
+    </script>
+  </body>
+</html>

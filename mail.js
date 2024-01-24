@@ -1,31 +1,44 @@
 const nodemailer = require("nodemailer");
 const express = require("express");
 const bodyParser = require("body-parser");
-
-const app = express();
-const port = 3000;
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+require("dotenv").config();
+const crypto = require("crypto");
+const db = require("./db");
 
 const transporterConfig = {
   service: "gmail",
   auth: {
-    user: "your_email@gmail.com",
-    pass: "your_email_password",
+    user: process.env.EMAIL,
+    pass: process.env.PASSWORD,
   },
 };
+const port = 3000;
+
+const app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public"));
+
 const transporter = nodemailer.createTransport(transporterConfig);
 
-app.post("/reset-password", (req, res) => {
+function generateToken() {
+  return crypto.randomBytes(20).toString("hex");
+}
+
+app.post("/reset-link", (req, res) => {
   const userEmail = req.body.email;
+  if (!db.isEmailExisting()) {
+    return res.status(400).send("Email does not exist");
+  }
 
-  const resetToken = "your_generated_token";
+  const resetToken = generateToken();
+  db.storeToken(userEmail, resetToken);
 
-  const resetLink = `https://anwesha.iitp.ac.in/reset-password?token=${resetToken}`;
+  var host = req.get("host");
+  const resetLink = `http://${host}/reset-password?token=${resetToken}`;
 
   const mailOptions = {
-    from: "your_email@gmail.com",
+    from: process.env.EMAIL,
     to: userEmail,
     subject: "Password Reset",
     text: `Click the following link to reset your password: ${resetLink}`,
@@ -39,7 +52,18 @@ app.post("/reset-password", (req, res) => {
     res.status(200).send("Password reset email sent successfully!");
   });
 });
+app.get("/reset-password", (req, res) => {
+  res.sendFile("/public/reset.html", { root: __dirname });
+});
+app.post("/reset-password", (req, res) => {
+  db.setPassword(req.body.token, req.body.password);
+  res.status(200).send("Password reset successfully!");
+});
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
+});
+
+app.get("/", (req, res) => {
+  res.sendFile("/public/index.html", { root: __dirname });
 });
